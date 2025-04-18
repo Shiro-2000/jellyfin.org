@@ -123,11 +123,36 @@ Create a proxy host and point it to your Jellyfin server's IP address and http p
 
 Enable "Block Common Exploits", and "Websockets Support". Configure the access list if you intend to use them. Otherwise leave it on "publicly accessible".
 
+## Extra Nginx Proxy Manager Configurations
+### Disabling proxy buffering 
 In the "Advanced" tab, enter the following in "Custom Nginx Configuration".  This is optional, but recommended if you intend to make Jellyfin accessible outside of your home.
-
 ```config
     # Disable buffering when the nginx proxy gets very resource heavy upon streaming
     proxy_buffering off;
 ```
-
+### SSL Certificates
 In the "SSL" tab, use the jellyfin.example.org certificate that you created with Nginx Proxy Manager and enable "Force SSL", "HTTP/2 Support", "HSTS Enabled", "HSTS Subdomains".
+
+### Security Headers: 
+Optional Security headers can be added to Jellyfin, it is highly recommended to test these settings to ensure they are properly working for your instance of Jellyfin.
+Jellyfin out of the box does not contain Content-Security-Policy headers, using online scanning tools such as the [Mozilla Observatory](https://developer.mozilla.org/en-US/observatory) scanning tool Jellyfin will return a `C+/B` rating depending on your configuration with a warning about missing headers, Nginx Proxy Manager can be used to add these headers for an `A+` rating. 
+
+In your Jellyfin Proxy host, navigate to "Custom locations" section and add a location. 
+The location should be `/`, the Forward Host name IP is your jellyfin servers IP address and port (usually 8096). 
+Click the gear icon next to the location block, this will open up an advanced option to allow headers to be set.
+
+Here is an example of headers that are added: 
+```
+add_header X-Content-Type-Options "nosniff" always;
+add_header Content-Security-Policy "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; media-src 'self' blob:; img-src 'self'; worker-src 'self' blob:; frame-ancestors 'self';" always;
+```
+Save and verify that your Jellyfin is working and accessible. 
+
+If you are using Custom CSS you will need to add the URL for the CSS into the CSP header like such: 
+
+```
+add_header X-Content-Type-Options "nosniff" always;
+add_header Content-Security-Policy "default-src 'self'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net/npm/jellyskin@latest/dist/main.css https://cdn.jsdelivr.net/npm/jellyskin@latest/dist/logo.css https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; media-src 'self' blob:; img-src 'self'; worker-src 'self' blob:; frame-ancestors 'self';" always;
+```
+As always, save and verify that your Jellyfin instance is working and accessible, ensure content loads as expected. 
+
